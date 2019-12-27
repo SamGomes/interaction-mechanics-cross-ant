@@ -1,25 +1,13 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 
 public class InputManager : MonoBehaviour {
 
-    public struct KeyBindingData
-    {
-        public List<KeyCode> keyCodes;
-        public ButtonPressType pressType;
-        public CallBack callback;
-
-        public bool isExclusive;
-    }
-
-
     public enum ButtonPressType
     {
-        PRESSED,
+        ALL,
         DOWN,
         UP,
     }
@@ -27,154 +15,110 @@ public class InputManager : MonoBehaviour {
     public GameManager gameManager;
     public GameSceneManager gameSceneManager;
 
-    public delegate void CallBack(List<KeyCode> triggeredKeys);
-    private Dictionary<List<KeyCode>, KeyBindingData> keyBindings;
+    public delegate void CallBack();
 
-    private Dictionary<KeyCode,bool> currPressedKeys = new Dictionary<KeyCode, bool>();
-    private List<KeyCode> bufferMod;
+    Dictionary<KeyCode[], KeyValuePair< ButtonPressType, CallBack> > keyBindings;
+    Dictionary<string[], KeyValuePair< ButtonPressType, CallBack> > buttonBindings;
+
+    public void InitKeys()
+    {
+        this.RemoveAllKeyBindings();
+        this.AddKeyBinding(new KeyCode[] { KeyCode.Space }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.NONE); });
+        this.AddButtonBinding(new string[] { "Start" }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.NONE); });
+
+        //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.Q }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_0].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });
+        //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.W }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_1].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });
+        //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.O }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_0].registerUserButtonPress(Utilities.PlayerId.PLAYER_1); });
+        //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.P }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_1].registerUserButtonPress(Utilities.PlayerId.PLAYER_1); });
+
+        //    inputManager.addButtonBinding(new string[] { "YButtonJoy1" }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_0].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });
+        //    inputManager.addButtonBinding(new string[] { "BButtonJoy1" }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_1].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });
+        //    inputManager.addButtonBinding(new string[] { "YButtonJoy2" }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_0].registerUserButtonPress(Utilities.PlayerId.PLAYER_1); });
+        //    inputManager.addButtonBinding(new string[] { "BButtonJoy2" }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_1].registerUserButtonPress(Utilities.PlayerId.PLAYER_1); });
+        //
+    }
 
     void Awake() //before any start init stuff
     {
-        keyBindings = new Dictionary<List<KeyCode>, KeyBindingData>();
-
-        AddKeyBinding(new List<KeyCode>() { KeyCode.Z, KeyCode.X, KeyCode.C }, InputManager.ButtonPressType.DOWN, 
-        delegate(List<KeyCode> triggeredKey) {
-            Debug.Log("rfegyregfyreugfryeufr");
-        }, false);
+        keyBindings = new Dictionary<KeyCode[], KeyValuePair<ButtonPressType, CallBack>>();
+        buttonBindings = new Dictionary<string[], KeyValuePair<ButtonPressType, CallBack>>();
+        InitKeys();
     }
-
-
-    public bool ContainsSequence<KeyCode>(List<KeyCode> source, List<KeyCode> other)
+    void Start()
     {
-        int count = other.Count();
-        while (source.Any())
-        {
-            if (source.Take(count).SequenceEqual(other))
-                return true;
-            source = source.Skip(1).ToList();
-        }
-        return false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        bufferMod = new List<KeyCode>();
-        Dictionary<KeyCode, bool> oldPressedKeys = currPressedKeys;
-        currPressedKeys = new Dictionary<KeyCode, bool>();
-        foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+        foreach(KeyCode[] simultaneouskeys in keyBindings.Keys)
         {
-            if (Input.GetKey(key) && !currPressedKeys.ContainsKey(key))
-            {
-                if (oldPressedKeys.ContainsKey(key))
-                {
-                    currPressedKeys.Add( key, oldPressedKeys[key] );
-                }
-                else
-                {
-                    currPressedKeys.Add(key, false);
-                }
-            }
-        }
-
-        bool keysDown = !currPressedKeys.Keys.ToList().TrueForAll(oldPressedKeys.Keys.ToList().Contains);
-        bool keysUp = !oldPressedKeys.Keys.ToList().TrueForAll(currPressedKeys.Keys.ToList().Contains) || currPressedKeys.Count == 0;
-        if (currPressedKeys.Count > 0 && (keysDown || keysUp))
-        {
-            foreach(KeyCode key in currPressedKeys.Keys)
-            {
-                if (!currPressedKeys[key])
-                {
-                    bufferMod.Add(key);
-                }
-            }
+            var pair = keyBindings[simultaneouskeys];
             
+            bool allKeysPressed=true;
+            foreach (KeyCode key in simultaneouskeys)
+            {
+                if (!((pair.Key == ButtonPressType.ALL && Input.GetKey(key))
+                 || (pair.Key == ButtonPressType.DOWN && Input.GetKeyDown(key))
+                 || (pair.Key == ButtonPressType.UP && Input.GetKeyUp(key))))
+                {
+                    allKeysPressed = false;
+                }
+            }
+            if (allKeysPressed)
+            {
+                pair.Value();
+            }
         }
 
-        foreach (List<KeyCode> simultaneouskeysList in keyBindings.Keys)
+        foreach (string[] simultaneouskeys in buttonBindings.Keys)
         {
-            var pair = keyBindings[simultaneouskeysList];
-            if (pair.isExclusive && (bufferMod.Count > simultaneouskeysList.Count || currPressedKeys.Count > simultaneouskeysList.Count))
-            {
-                continue;
-            }
-            switch (pair.pressType)
-            {
-                case ButtonPressType.DOWN:
-                    if (bufferMod.Count < simultaneouskeysList.Count)
-                    {
-                        continue;
-                    }
+            var pair = buttonBindings[simultaneouskeys];
 
-                    if (!(simultaneouskeysList.TrueForAll(delegate(KeyCode key) {
-                        return (bufferMod.Contains(key) || key == (KeyCode)(-1));
-                    }) && keysDown))
-                    {
-                        continue;
-                    }
-                    
-                    break;
-                case ButtonPressType.UP:
-                    if (bufferMod.Count < simultaneouskeysList.Count)
-                    {
-                        continue;
-                    }
-
-                    if (!(simultaneouskeysList.TrueForAll(delegate (KeyCode key) {
-                        return (bufferMod.Contains(key) || key == (KeyCode)(-1));
-                    }) && keysUp))
-                    {
-                        continue;
-                    }
-                    
-                    break;
-                case ButtonPressType.PRESSED:
-                    if (currPressedKeys.Count < simultaneouskeysList.Count)
-                    {
-                        continue;
-                    }
-                    if (!(simultaneouskeysList.TrueForAll(delegate (KeyCode key) {
-                        return (currPressedKeys.Keys.ToList().Contains(key) || key == (KeyCode)(-1));
-                    })))
-                    {
-                        continue;
-                    }
-
-                    break;
-            }
-            pair.callback(bufferMod);
-            foreach(KeyCode key in simultaneouskeysList)
+            bool allKeysPressed = true;
+            foreach (string key in simultaneouskeys)
             {
-                currPressedKeys[key] = true;
+                if (!((pair.Key == ButtonPressType.ALL && Input.GetButton(key))
+                 || (pair.Key == ButtonPressType.DOWN && Input.GetButtonDown(key))
+                 || (pair.Key == ButtonPressType.UP && Input.GetButtonUp(key))))
+                {
+                    allKeysPressed = false;
+                }
             }
-
-            string print = "";
-            foreach (KeyCode key in bufferMod)
+            if (allKeysPressed)
             {
-                print += key.ToString() + ",";
+                pair.Value();
             }
-            Debug.Log("Pressed Key: [" + print + "]");
-            //currPressedKeys = currPressedKeys.Except(simultaneouskeysList).ToList();
         }
 
-
     }
 
-    public void AddKeyBinding(List<KeyCode> keys, ButtonPressType pressType, CallBack callback, bool isExlusive)
+    public void AddKeyBinding(KeyCode[] keys, ButtonPressType pressType, CallBack callback)
     {
-        keyBindings.Add(keys, new KeyBindingData() { pressType = pressType, callback = callback, isExclusive = isExlusive});
+        keyBindings.Add(keys, new KeyValuePair < ButtonPressType, CallBack >(pressType, callback));
+    }
+    public void AddButtonBinding(string[] keys, ButtonPressType pressType, CallBack callback)
+    {
+        buttonBindings.Add(keys, new KeyValuePair<ButtonPressType, CallBack>(pressType, callback));
     }
 
-    public void ChangeKeyBinding(List<KeyCode> keys, ButtonPressType pressType, CallBack callback, bool isExlusive)
+    public void ChangeKeyBinding(KeyCode[] keys, ButtonPressType pressType, CallBack callback)
     {
         if (keyBindings.ContainsKey(keys))
         {
-            keyBindings[keys] = new KeyBindingData() { pressType = pressType, callback = callback, isExclusive = isExlusive };
+            keyBindings[keys] = new KeyValuePair<ButtonPressType, CallBack>(pressType, callback);
         }
             
     }
-    
-    public void RemoveKeyBinding(List<KeyCode> keys)
+    public void ChangeButtonBinding(string[] keys, ButtonPressType pressType, CallBack callback)
+    {
+        if (buttonBindings.ContainsKey(keys))
+        {
+            buttonBindings[keys] = new KeyValuePair<ButtonPressType, CallBack>(pressType, callback);
+        }
+    }
+
+    public void RemoveKeyBinding(KeyCode[] keys)
     {
         if (keyBindings.ContainsKey(keys))
         {
@@ -182,31 +126,23 @@ public class InputManager : MonoBehaviour {
         }
 
     }
+    public void RemoveButtonBinding(string[] keys)
+    {
+        if (buttonBindings.ContainsKey(keys))
+        {
+            buttonBindings.Remove(keys);
+        }
+    }
 
     public void RemoveAllKeyBindings()
     {
-        keyBindings.Clear();
+        keyBindings = new Dictionary<KeyCode[], KeyValuePair<ButtonPressType, CallBack>>();
     }
-    
-    internal bool ContainsKeyBinding(List<KeyCode> generatedKeyCombo)
+    public void RemoveAllButtonBindings()
     {
-        foreach(List<KeyCode> combo in keyBindings.Keys)
-        {
-            bool comboContains = true;
-            foreach(KeyCode key in generatedKeyCombo)
-            {
-                if (!combo.Contains(key))
-                {
-                    comboContains = false;
-                }
-            }
-            if (comboContains)
-            {
-                return true;
-            }
-        }
-        return false;
+        buttonBindings = new Dictionary<string[], KeyValuePair<ButtonPressType, CallBack>>();
     }
+
 }
 
 

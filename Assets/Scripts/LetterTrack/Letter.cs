@@ -6,27 +6,22 @@ public class Letter : MonoBehaviour {
 
     public float speed;
     public char letterText;
-    private float totalTranslation;
-
-    public bool isTranslationEnabled;
+    private float totalTranslation = 0;
 
 	void Awake() {
-        totalTranslation = 0;
-        isTranslationEnabled = true;
-        speed = 1.5f;
+        this.speed = 1.5f;
     }
 	
 	// Update is called once per frame
 	void FixedUpdate () {
-        if (isTranslationEnabled)
-        {
-            float translation = Time.deltaTime * speed;
-            transform.Translate(translation, 0, 0);
-            totalTranslation += translation;
-        }
+        float translation = Time.deltaTime * speed;
+        transform.Translate(translation, 0, 0);
+        totalTranslation += translation;
+        
     }
 
     void DestroyLetter() {
+        Destroy(GetComponent<SpriteRenderer>().gameObject);
         Destroy(this.gameObject);
     }
 }

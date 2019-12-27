@@ -5,7 +5,7 @@ using UnityEngine;
 public class AntSpawner : MonoBehaviour
 {
 
-    //public Utilities.OutputRestriction outputRestriction;
+    public Utilities.OutputRestriction outputRestriction;
     public GameObject spawnedParticleSystem;
 
     public GameObject antPrefab;
@@ -21,7 +21,7 @@ public class AntSpawner : MonoBehaviour
         antScript.SetCargo(currTargetWord);
         antScript.myQueen = this.QueenAnt;
         antScript.mySpawner = this.gameObject;
-        //antScript.outputRestriction = outputRestriction;
+        antScript.outputRestriction = outputRestriction;
         antScript.myParticleSystem = spawnedParticleSystem.GetComponent<ParticleSystem>();
 
     }
