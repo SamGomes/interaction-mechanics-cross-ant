@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 21afa47bcfd54a945882dd613bde021e
+timeCreated: 1517045004
+licenseType: Free
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - resultPanel: {instanceID: 0}
+  - hpPanel: {instanceID: 0}
+  - displayPanel: {instanceID: 0}
+  - scorePanel: {instanceID: 0}
+  - timePanel: {instanceID: 0}
+  - reqPanel: {instanceID: 0}
+  - Spawner: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
