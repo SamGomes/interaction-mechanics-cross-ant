@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
 using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public static class Utilities
 {
@@ -57,17 +53,18 @@ public class GameManager : MonoBehaviour
 
     public bool isGameplayPaused;
 
-    public GameObject hpPanel;
-    public GameObject displayPanel;
-    public GameObject scorePanel;
-    public GameObject timePanel;
-    public GameObject reqPanel;
-    public GameObject track;
+    public Text hpPanel;
+    public SpriteRenderer foodSprite;
+    public Text scorePanel;
+    public Text timePanel;
+    public Text reqPanel;
+//    public GameObject track;
 
     public InputManager inputManager;
 
 
     public GameObject playersPanel;
+    public Text[] playersPanelTexts;
     public AntSpawner[] antSpawners;
     public LetterSpawner[] letterSpawners;
     public List<Button> gameButtons;
@@ -115,6 +112,8 @@ public class GameManager : MonoBehaviour
     void Start()
     {
 
+        playersPanelTexts = playersPanel.transform.GetComponentsInChildren<UnityEngine.UI.Text>();
+        
         lastPlayersToPressIndexes = new List<Utilities.PlayerId>();
 
         isGameplayPaused = false;
@@ -142,8 +141,6 @@ public class GameManager : MonoBehaviour
         exercises.Add(new Exercise("Word to match: JELLY \n Your Word:_", "JELLY"));
 
         lifes = 50;
-
-        //Application.targetFrameRate = 60;
 
         timeLeft = 100.0f;
         InvokeRepeating("DecrementTimeLeft", 0.0f, 1.0f);
@@ -182,13 +179,14 @@ public class GameManager : MonoBehaviour
             Hurt();
         }
 
-        hpPanel.GetComponent<UnityEngine.UI.Text>().text = "Lifes: "+ lifes;
-        scorePanel.GetComponent<UnityEngine.UI.Text>().text = "Team Score: "+ score;
-        timePanel.GetComponent<UnityEngine.UI.Text>().text = "Time: "+ timeLeft;
+        hpPanel.text = "Lifes: "+ lifes;
+        scorePanel.text = "Team Score: "+ score;
+        timePanel.text = "Time: "+ timeLeft;
 
         for(int i=0; i < players.Count; i++)
         {
-            playersPanel.transform.GetComponentsInChildren<UnityEngine.UI.Text>()[i].text = "Player "+players[i].GetName()+" Score: " + players[i].score;
+            playersPanelTexts[i].text = "Player "+ 
+                players[i].GetName()+" Score: " + players[i].score;
         }
 
         //update curr display message
@@ -209,8 +207,7 @@ public class GameManager : MonoBehaviour
                 displayString += substrings[1];
             }
         }
-        reqPanel.GetComponent<ReqScript>().UpdateRequirement(displayString);
-
+        reqPanel.text = displayString;
     }
 
 
@@ -297,31 +294,31 @@ public class GameManager : MonoBehaviour
         }
 
 
-        //change ants modes
-        prevAntOutputs = new List<Utilities.OutputRestriction>();
-        track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/track", typeof(Sprite));
-
-        string targetWord = this.currExercise.targetWord;
-
-        for (int i = 0; i < letterSpawners.Length; i++)
-        {
-            letterSpawners[i].UpdateCurrStarredWord("");
-
-        }
-        for (int i = 0; i < antSpawners.Length; i++)
-        {
-            Utilities.OutputRestriction currOutputRestriction = antSpawners[i].GetComponent<AntSpawner>().outputRestriction;
-            prevAntOutputs.Add(currOutputRestriction);
-
-            if (currOutputRestriction == Utilities.OutputRestriction.STARPOWER)
-            {
-                //change the track on star power
-                track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/starTrack", typeof(Sprite));
-                letterSpawners[UnityEngine.Random.Range(0,letterSpawners.Length)].UpdateCurrStarredWord(targetWord);
-            }
-
-            antSpawners[i].GetComponent<AntSpawner>().outputRestriction = ChooseOutputRestriction(); //Utilities.OutputRestriction.STARPOWER;
-        }
+//        //change ants modes
+//        prevAntOutputs = new List<Utilities.OutputRestriction>();
+//        track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/track", typeof(Sprite));
+//
+//        string targetWord = this.currExercise.targetWord;
+//
+//        for (int i = 0; i < letterSpawners.Length; i++)
+//        {
+//            letterSpawners[i].UpdateCurrStarredWord("");
+//
+//        }
+//        for (int i = 0; i < antSpawners.Length; i++)
+//        {
+//            Utilities.OutputRestriction currOutputRestriction = antSpawners[i].GetComponent<AntSpawner>().outputRestriction;
+//            prevAntOutputs.Add(currOutputRestriction);
+//
+//            if (currOutputRestriction == Utilities.OutputRestriction.STARPOWER)
+//            {
+//                //change the track on star power
+//                track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/starTrack", typeof(Sprite));
+//                letterSpawners[UnityEngine.Random.Range(0,letterSpawners.Length)].UpdateCurrStarredWord(targetWord);
+//            }
+//
+//            antSpawners[i].GetComponent<AntSpawner>().outputRestriction = ChooseOutputRestriction(); //Utilities.OutputRestriction.STARPOWER;
+//        }
 
     }
 
@@ -331,8 +328,8 @@ public class GameManager : MonoBehaviour
         Exercise newExercise = exercises[random];
 
         currWord = "";
-        displayPanel.GetComponent<DisplayPanel>().SetTargetImage(newExercise.targetWord);
-
+        
+        foodSprite.sprite = (Sprite) Resources.Load("Textures/FoodItems/" + newExercise.targetWord, typeof(Sprite));
         this.currExercise = newExercise;
     }
 

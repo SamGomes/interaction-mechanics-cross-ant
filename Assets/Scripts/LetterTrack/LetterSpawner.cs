@@ -14,7 +14,7 @@ public class LetterSpawner : MonoBehaviour
 
     private float randomInterval;
 
-    private string currStarredWord;
+//    private string currStarredWord;
 
 
     private char[] letters = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'L', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
@@ -34,10 +34,10 @@ public class LetterSpawner : MonoBehaviour
     }
 
 
-    public void UpdateCurrStarredWord(string currTargetWord)
-    {
-        this.currStarredWord = currTargetWord;
-    }
+//    public void UpdateCurrStarredWord(string currTargetWord)
+//    {
+//        this.currStarredWord = currTargetWord;
+//    }
 
     IEnumerator SpawnLetterWithDelay(float sec)
     {
@@ -58,10 +58,10 @@ public class LetterSpawner : MonoBehaviour
         string path = "Textures/Alphabet/" + currLetter;
 
         newLetter.GetComponent<Letter>().letterText = currLetter;
-        if (currStarredWord.Contains(currLetter.ToString().ToUpper()))
-        {
-            newLetter.GetComponent<SpriteRenderer>().color = Color.cyan;
-        }
+//        if (currStarredWord.Contains(currLetter.ToString().ToUpper()))
+//        {
+//            newLetter.GetComponent<SpriteRenderer>().color = Color.cyan;
+//        }
         //newLetter.GetComponent<Letter>().speed = newLetter.GetComponent<Letter>().speed + ((score + 1) * 0.05f);
 
         letterRenderer.sprite = (Sprite) Resources.Load(path, typeof(Sprite));
