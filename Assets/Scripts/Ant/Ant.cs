@@ -25,8 +25,6 @@ public class Ant : MonoBehaviour
 
     private float throwingStartTime = -1;
 
-    public Utilities.OutputRestriction outputRestriction;
-
     // Use this for initialization
     void Start()
     {
@@ -54,44 +52,27 @@ public class Ant : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (outputRestriction == Utilities.OutputRestriction.NONE)
+        this.transform.Translate(Vector3.right * currMovementSpeed * Time.deltaTime);
+        if (throwingStartTime < 0)
         {
             return;
         }
-
-        //STAR POWER
-        if (outputRestriction == Utilities.OutputRestriction.STARPOWER)
+        else
         {
-            myParticleSystem.Play();
-        }
-        
-        
-        //EAT ANIMATION
-        if (outputRestriction == Utilities.OutputRestriction.EAT)
-        {
-            
-            this.transform.Translate(Vector3.right * currMovementSpeed * Time.deltaTime);
-            if (throwingStartTime < 0)
+            float currenTime = Time.time;
+            float difference = currenTime - throwingStartTime;
+            if (difference > 4)
             {
-                return;
-            }
-            else
-            {
-                float currenTime = Time.time;
-                float difference = currenTime - throwingStartTime;
-                if (difference > 4)
+                this.myAnimator.SetTrigger("walk");
+                gameObject.GetComponents<AudioSource>()[1].Play();
+                if (queenAnimator != null)
                 {
-                    this.myAnimator.SetTrigger("walk");
-                    gameObject.GetComponents<AudioSource>()[1].Play();
-                    if (queenAnimator != null)
-                    {
-                        queenAnimator.SetTrigger("rest");
-                    }
-
-                    throwingStartTime = -1;
-                    this.gameObject.GetComponent<SpriteRenderer>().flipX = !this.gameObject.GetComponent<SpriteRenderer>().flipX;
-                    currMovementSpeed = -movementSpeed;
+                    queenAnimator.SetTrigger("rest");
                 }
+
+                throwingStartTime = -1;
+                this.gameObject.GetComponent<SpriteRenderer>().flipX = !this.gameObject.GetComponent<SpriteRenderer>().flipX;
+                currMovementSpeed = -movementSpeed;
             }
         }
     }

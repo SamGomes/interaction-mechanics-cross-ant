@@ -7,58 +7,64 @@ public static class Utilities
 {
     public enum PlayerId
     {
-        PLAYER_0,
-        PLAYER_1,
-        NONE
+        Player0,
+        Player1,
+        None
     }
 
     public enum ButtonId
     {
-        BTN_0,
-        BTN_1,
-        BTN_2,
-        NONE
+        Btn0,
+        Btn1,
+        Btn2,
+        None
     }
 
-    public enum PlayersToPressButtonAlternative
+    public enum KeyAlt
     {
-        SINGLE_PLAYER,
-        MULTIPLAYER
+        SinglePlayer,
+        Punishing,
+        MultiPlayer
     }
 
-    public enum OutputRestriction
-    {
-        EAT,
-        STARPOWER,
-        NONE
-    }
+    public static List<KeyAlt> allKeyAlts = new List<KeyAlt>((KeyAlt[]) Enum.GetValues(typeof(Utilities.KeyAlt)));
+    public static List<ButtonId> allButtonIds = new List<ButtonId>( (ButtonId[]) Enum.GetValues(typeof(Utilities.ButtonId)));
+    public static List<PlayerId> allPlayerIds = new List<PlayerId>( (PlayerId[]) Enum.GetValues(typeof(Utilities.PlayerId)));
 
-    public static PlayersToPressButtonAlternative[] playersToPressButtonAlternatives = (PlayersToPressButtonAlternative[]) Enum.GetValues(typeof(Utilities.PlayersToPressButtonAlternative));
-
-    public static ButtonId[] buttonIds = (ButtonId[]) Enum.GetValues(typeof(Utilities.ButtonId));
-
-    public static OutputRestriction[] outputRestrictions = (OutputRestriction[])Enum.GetValues(typeof(Utilities.OutputRestriction));
-
-    public static int numPlayersToPressButtonAlternatives = playersToPressButtonAlternatives.Length;
+    public static int numKeyAlts = allKeyAlts.Count;
     public static int simultaneousKeysToPress = 2;
-
-    public static int numOutputRestriction = outputRestrictions.Length;
+    public static int numLevelsPerGame = 7;
+    
+    //shuffle a list
+    public static List<T> Shuffle<T> (List<T> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            int k = UnityEngine.Random.Range(0, i);
+            T value = list[k];
+            list[k] = list[i];
+            list[i] = value;
+        }
+        return list;
+    }
 }
 
 
 public class GameManager : MonoBehaviour
 {
-
+    public List<Utilities.KeyAlt> levelsKeyAlts;
+    
+    public int currLevel;
+    public int keyAltCounter;
+    
     public GameSceneManager gameSceneManager;
 
     public bool isGameplayPaused;
 
-    public Text hpPanel;
     public SpriteRenderer foodSprite;
     public Text scorePanel;
     public Text timePanel;
     public Text reqPanel;
-//    public GameObject track;
 
     public InputManager inputManager;
 
@@ -73,15 +79,13 @@ public class GameManager : MonoBehaviour
 
     public float timeLeft;
 
-    public int lifes;
     private int score;
     private List<Exercise> exercises;
 
     private List<Player> players;
     private List<Utilities.PlayerId> lastPlayersToPressIndexes;
 
-    private List<Utilities.OutputRestriction> prevAntOutputs;
-    public Utilities.PlayersToPressButtonAlternative currNumPlayersCombo;
+    public Utilities.KeyAlt currKeyAlt;
 
     public Exercise currExercise { get; set; }
 
@@ -111,7 +115,13 @@ public class GameManager : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-
+        while (levelsKeyAlts.Count < Utilities.numLevelsPerGame)
+        {
+            levelsKeyAlts.AddRange(Utilities.allKeyAlts);
+        }
+        Utilities.Shuffle(levelsKeyAlts);
+        
+        
         playersPanelTexts = playersPanel.transform.GetComponentsInChildren<UnityEngine.UI.Text>();
         
         lastPlayersToPressIndexes = new List<Utilities.PlayerId>();
@@ -120,8 +130,8 @@ public class GameManager : MonoBehaviour
         gameSceneManager.MainSceneLoadedNotification();
 
         players = new List<Player>();
-        players.Add(new Player(Utilities.PlayerId.PLAYER_0, new KeyCode[] { KeyCode.Q, KeyCode.W, KeyCode.E }, new string[] { "YButtonJoy1" , "BButtonJoy1" }));
-        players.Add(new Player(Utilities.PlayerId.PLAYER_1, new KeyCode[] { KeyCode.I, KeyCode.O, KeyCode.P }, new string[] { "YButtonJoy2" , "BButtonJoy2" }));
+        players.Add(new Player(Utilities.PlayerId.Player0, new KeyCode[] { KeyCode.Q, KeyCode.W, KeyCode.E }, new string[] { "YButtonJoy1" , "BButtonJoy1" }));
+        players.Add(new Player(Utilities.PlayerId.Player1, new KeyCode[] { KeyCode.I, KeyCode.O, KeyCode.P }, new string[] { "YButtonJoy2" , "BButtonJoy2" }));
 
 
         exercises = new List<Exercise>();
@@ -139,21 +149,14 @@ public class GameManager : MonoBehaviour
         exercises.Add(new Exercise("Word to match: FISH \n Your Word:_", "FISH"));
         exercises.Add(new Exercise("Word to match: VANILLA \n Your Word:_", "VANILLA"));
         exercises.Add(new Exercise("Word to match: JELLY \n Your Word:_", "JELLY"));
-
-        lifes = 50;
-
+        
         timeLeft = 100.0f;
         InvokeRepeating("DecrementTimeLeft", 0.0f, 1.0f);
 
         ChangeTargetWord();
-        ChangeGameParametrizations(true);
+        ChangeGameParametrizations();
 
-        prevAntOutputs = new List<Utilities.OutputRestriction>(2);
-        prevAntOutputs.Add(Utilities.OutputRestriction.NONE);
-        prevAntOutputs.Add(Utilities.OutputRestriction.NONE);
-
-        gameSceneManager.StartAndPauseGame(Utilities.PlayerId.NONE); //for the initial screen
-    
+        gameSceneManager.StartAndPauseGame(Utilities.PlayerId.None); //for the initial screen
     }
 
 
@@ -165,8 +168,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        //if no lifes end game immediately
-        if (lifes < 1)
+        if (currLevel > Utilities.numLevelsPerGame)
         {
             gameSceneManager.EndGame();
         }
@@ -176,10 +178,8 @@ public class GameManager : MonoBehaviour
         {
             ChangeLevel();
             timeLeft = 100.0f;
-            Hurt();
+            Hurt(Utilities.allPlayerIds);
         }
-
-        hpPanel.text = "Lifes: "+ lifes;
         scorePanel.text = "Team Score: "+ score;
         timePanel.text = "Time: "+ timeLeft;
 
@@ -216,7 +216,8 @@ public class GameManager : MonoBehaviour
     {
         PoppupQuestionnaires();
         ChangeTargetWord();
-        ChangeGameParametrizations(false);
+        ChangeGameParametrizations();
+        currLevel++;
     }
 
     void DecrementTimeLeft()
@@ -228,29 +229,29 @@ public class GameManager : MonoBehaviour
 
     void PoppupQuestionnaires()
     {
-        gameSceneManager.pauseForQuestionnaires(Utilities.PlayerId.NONE);
+        gameSceneManager.pauseForQuestionnaires(Utilities.PlayerId.None);
         //spawn questionnaires before changing word
         foreach (Player player in players)
         {
-            //Debug.Log("window.open('https://docs.google.com/forms/d/e/1FAIpQLSeM3Xn5qDBdX7QCtyrPILLbqpYj3ueDcLa_-9CbxCPzxVsMzg/viewform?usp=pp_url&entry.100873100=" + player.GetName() + "&entry.2097900814=" + player.GetId() + "&entry.631185473=" + currExercise.targetWord + "&entry.159491668=" + (int)this.currNumPlayersCombo + "&entry.1472728103=" + (int)prevAntOutputs[players.IndexOf(player)] + "');");
-            Application.ExternalEval("window.open('https://docs.google.com/forms/d/e/1FAIpQLSeM3Xn5qDBdX7QCtyrPILLbqpYj3ueDcLa_-9CbxCPzxVsMzg/viewform?usp=pp_url&entry.100873100=" + player.GetName() + "&entry.2097900814=" + player.GetId() + "&entry.631185473=" + currExercise.targetWord + "&entry.159491668=" + (int)this.currNumPlayersCombo+ "&entry.1472728103=" + (int)prevAntOutputs[players.IndexOf(player)] + "');"); //spawn questionaires
+            Application.ExternalEval("window.open('https://docs.google.com/forms/d/e/1FAIpQLSeM3Xn5qDBdX7QCtyrPILLbqpYj3ueDcLa_-9CbxCPzxVsMzg/viewform?usp=pp_url&entry.100873100=" + player.GetName() + "&entry.2097900814=" + player.GetId() + "&entry.631185473=" + currExercise.targetWord + "&entry.159491668=" + (int)this.currKeyAlt+ "');"); //spawn questionaires
         }
     }
 
-    void ChangeGameParametrizations(bool firstTimeCall)
+    void ChangeGameParametrizations()
     {
         inputManager.InitKeys();
         
         int numKeysToPress = Utilities.simultaneousKeysToPress;
-        this.currNumPlayersCombo = firstTimeCall ? Utilities.PlayersToPressButtonAlternative.SINGLE_PLAYER : ChooseNumPlayersCombo();
+        this.currKeyAlt =  Utilities.allKeyAlts[keyAltCounter++%Utilities.numKeyAlts];
+        
         foreach (Player player in this.players)
         {
             List<KeyCode> possibleKeys = new List<KeyCode>();
-            if (this.currNumPlayersCombo == Utilities.PlayersToPressButtonAlternative.SINGLE_PLAYER)
+            if (this.currKeyAlt == Utilities.KeyAlt.SinglePlayer)
             {
                 possibleKeys = new List<KeyCode>(player.GetMyKeys());
             }
-            else if (this.currNumPlayersCombo == Utilities.PlayersToPressButtonAlternative.MULTIPLAYER)
+            else if (this.currKeyAlt == Utilities.KeyAlt.MultiPlayer)
             {
                 possibleKeys = new List<KeyCode>();
                 foreach (Player innerPlayer in this.players)
@@ -286,40 +287,12 @@ public class GameManager : MonoBehaviour
 
         for(int i=0; i<letterSpawners.Length; i++)
         {
-            if(!firstTimeCall && letterSpawners[i].minIntervalRange > 0.3 && letterSpawners[i].maxIntervalRange > 0.4)
+            if(currLevel>0 && letterSpawners[i].minIntervalRange > 0.3 && letterSpawners[i].maxIntervalRange > 0.4)
             {
                 letterSpawners[i].minIntervalRange -= 0.1f;
                 letterSpawners[i].maxIntervalRange -= 0.1f;
             }
         }
-
-
-//        //change ants modes
-//        prevAntOutputs = new List<Utilities.OutputRestriction>();
-//        track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/track", typeof(Sprite));
-//
-//        string targetWord = this.currExercise.targetWord;
-//
-//        for (int i = 0; i < letterSpawners.Length; i++)
-//        {
-//            letterSpawners[i].UpdateCurrStarredWord("");
-//
-//        }
-//        for (int i = 0; i < antSpawners.Length; i++)
-//        {
-//            Utilities.OutputRestriction currOutputRestriction = antSpawners[i].GetComponent<AntSpawner>().outputRestriction;
-//            prevAntOutputs.Add(currOutputRestriction);
-//
-//            if (currOutputRestriction == Utilities.OutputRestriction.STARPOWER)
-//            {
-//                //change the track on star power
-//                track.GetComponent<SpriteRenderer>().sprite = (Sprite)Resources.Load("Textures/starTrack", typeof(Sprite));
-//                letterSpawners[UnityEngine.Random.Range(0,letterSpawners.Length)].UpdateCurrStarredWord(targetWord);
-//            }
-//
-//            antSpawners[i].GetComponent<AntSpawner>().outputRestriction = ChooseOutputRestriction(); //Utilities.OutputRestriction.STARPOWER;
-//        }
-
     }
 
     void ChangeTargetWord()
@@ -333,9 +306,12 @@ public class GameManager : MonoBehaviour
         this.currExercise = newExercise;
     }
 
-    void Hurt()
+    void Hurt(List<Utilities.PlayerId> hitters)
     {
-        lifes--;
+        for (int i=0; i<hitters.Count; i++)
+        {
+            antSpawners[(int) hitters[i]].queenAnt.GetComponent<Animator>().SetTrigger("hurt");
+        }
     }
 
     public void RecordHit(List<Utilities.PlayerId> hitters, char letterText)
@@ -345,7 +321,6 @@ public class GameManager : MonoBehaviour
         this.currWord += letterText;
         this.currWord = this.currWord.ToUpper();
         string currTargetWord = this.currExercise.targetWord;
-
 
         if (currWord.Length <= currTargetWord.Length && currTargetWord[currWord.Length - 1] == currWord[currWord.Length - 1])
         {
@@ -357,12 +332,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Hurt();
+            Hurt(hitters);
             currWord = currWord.Remove(currWord.Length - 1);
             return;
         }
         
-
         if (currWord.CompareTo(currTargetWord) == 0)
         {
             timeLeft += currTargetWord.Length*4;
@@ -382,32 +356,14 @@ public class GameManager : MonoBehaviour
             {
                 antSpawner.SpawnAnt(currTargetWord);
             }
-
             ChangeLevel();
-
         }
     }
-
-
-    private Utilities.PlayersToPressButtonAlternative ChooseNumPlayersCombo()
-    {
-        int randomIndex = UnityEngine.Random.Range(0, Utilities.numPlayersToPressButtonAlternatives);
-        return Utilities.playersToPressButtonAlternatives[randomIndex];
-
-    }
-    private Utilities.OutputRestriction ChooseOutputRestriction()
-    {
-        int randomIndex = UnityEngine.Random.Range(0, Utilities.numOutputRestriction);
-        return Utilities.outputRestrictions[randomIndex];
-    }
-
 
     public List<Player> GetPlayers()
     {
         return this.players;
     }
-
-
 }
 
 
