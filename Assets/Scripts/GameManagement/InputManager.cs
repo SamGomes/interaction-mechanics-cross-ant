@@ -23,8 +23,8 @@ public class InputManager : MonoBehaviour {
     public void InitKeys()
     {
         this.RemoveAllKeyBindings();
-        this.AddKeyBinding(new KeyCode[] { KeyCode.Space }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.None); });
-        this.AddButtonBinding(new string[] { "Start" }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.None); });
+        this.AddKeyBinding(new KeyCode[] { KeyCode.Space }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.NONE); });
+        this.AddButtonBinding(new string[] { "Start" }, InputManager.ButtonPressType.DOWN, delegate () { gameSceneManager.StartAndPauseGame(Utilities.PlayerId.NONE); });
 
         //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.Q }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_0].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });
         //    inputManager.addKeyBinding(new KeyCode[] { KeyCode.W }, InputManager.ButtonPressType.ALL, delegate () { gameButtons[(int)Utilities.ButtonId.BTN_1].registerUserButtonPress(Utilities.PlayerId.PLAYER_0); });

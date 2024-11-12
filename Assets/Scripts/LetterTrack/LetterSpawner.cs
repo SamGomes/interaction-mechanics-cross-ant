@@ -13,6 +13,10 @@ public class LetterSpawner : MonoBehaviour
     private int score = 0;
 
     private float randomInterval;
+
+    private string currStarredWord;
+
+
     private char[] letters = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'L', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
                                  //"1", "2", "3", "4", "5", "6", "7", "8", "9"};
     private List<char> lettersPool;
@@ -21,11 +25,20 @@ public class LetterSpawner : MonoBehaviour
     {
         lettersPool = new List<char>();
     }
+
+    // Use this for initialization
     void Start()
     {
         float initialDelayInSeconds = 1.0f;
         StartCoroutine(SpawnLetterWithDelay(initialDelayInSeconds));
     }
+
+
+    public void UpdateCurrStarredWord(string currTargetWord)
+    {
+        this.currStarredWord = currTargetWord;
+    }
+
     IEnumerator SpawnLetterWithDelay(float sec)
     {
 
@@ -45,7 +58,12 @@ public class LetterSpawner : MonoBehaviour
         string path = "Textures/Alphabet/" + currLetter;
 
         newLetter.GetComponent<Letter>().letterText = currLetter;
-        
+        if (currStarredWord.Contains(currLetter.ToString().ToUpper()))
+        {
+            newLetter.GetComponent<SpriteRenderer>().color = Color.cyan;
+        }
+        //newLetter.GetComponent<Letter>().speed = newLetter.GetComponent<Letter>().speed + ((score + 1) * 0.05f);
+
         letterRenderer.sprite = (Sprite) Resources.Load(path, typeof(Sprite));
 
         newLetter.transform.position = gameObject.transform.position;
@@ -54,6 +72,7 @@ public class LetterSpawner : MonoBehaviour
         randomInterval = Random.Range(minIntervalRange, maxIntervalRange);
         StartCoroutine(SpawnLetterWithDelay(randomInterval));
     }
+
     private void ResetPool()
     {
         lettersPool = letters.ToList<char>();
@@ -63,7 +82,10 @@ public class LetterSpawner : MonoBehaviour
         lettersPool.AddRange(currWordLetters);
         lettersPool.AddRange(currWordLetters);
     }
+
     public void SetScore(int score) {
         this.score = score;
     }
+
+
 }
